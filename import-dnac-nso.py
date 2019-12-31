@@ -12,6 +12,7 @@ for device in dnac_device_list:
     mgmt_ip = device.get("managementIpAddress")
     print(hostname + " " + mgmt_ip)
     if "Host" in hostname:
+        # skip if DNAC host is mislabled as a switch but actually is a Host
         continue
     with ncs.maapi.Maapi() as m:
         with ncs.maapi.Session(m, 'admin', 'python'):
