@@ -1,5 +1,5 @@
 # Import DNA Center Inventory into Cisco NSO
-
+[![published](https://static.production.devnetcloud.com/codeexchange/assets/images/devnet-published.svg)](https://developer.cisco.com/codeexchange/github/repo/jabelk/import-dnac-nso)
 This script uses the [DNA Center Python SDK](https://github.com/cisco-en-programmability/dnacentersdk) and the Cisco NSO Python API to import the inventory of routers and switches from the Cisco DNA Center device list into the Cisco NSO device list. 
 
 In order for NSO to fully import devices, it needs login credentials, which is only available on the reservable Cisco DNA-C Sandbox. Otherwise the script can be demoed with the always on Sandbox, but the device configuration will not be imported. 
