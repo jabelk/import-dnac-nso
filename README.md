@@ -54,6 +54,9 @@ git clone https://github.com/cisco-en-programmability/dnacentersdk.git
 cd dnacentersdk/
 python3.6 setup.py install
 
+#add authgroup
+devices authgroups group dnac default-map remote-name admin remote-password ciscopsdt
+
 
 #remove lines forcing to go to python2
 
