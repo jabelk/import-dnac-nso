@@ -45,12 +45,12 @@ for device in dnac_device_list:
             # fetch-host-keys and sync-from does not require a transaction
             # continue using the Maapi object
             #
-            root = ncs.maagic.get_root(m)
-            device = root.devices.device[hostname]
+            # root = ncs.maagic.get_root(m)
+            # device = root.devices.device[hostname]
 
-            print("Fetching SSH keys...")
-            output = device.ssh.fetch_host_keys()
-            print("Result: %s" % output.result)
+            # print("Fetching SSH keys...")
+            # output = device.ssh.fetch_host_keys()
+            # print("Result: %s" % output.result)
 
             # print("Syncing configuration...")
             # output = device.sync_from()

@@ -121,3 +121,25 @@ Committed
 ```
 
 Now the Cisco NSO inventory includes all the network devices from Cisco DNA Center.
+
+### Further Exploration
+
+If you want to import the device's configuration in addition to the device list, you will need to [reserve the Cisco DNA Center Sandbox](https://developer.cisco.com/site/sandbox/) and change the Cisco DNA Center URL, username and password in the script and environmental variables. 
+
+If you have the reservable sandbox, you can then also uncomment the following lines in the script so NSO will import the configuration when it adds the device details:
+
+```python
+            # root = ncs.maagic.get_root(m)
+            # device = root.devices.device[hostname]
+
+            # print("Fetching SSH keys...")
+            # output = device.ssh.fetch_host_keys()
+            # print("Result: %s" % output.result)
+
+            # print("Syncing configuration...")
+            # output = device.sync_from()
+            # print("Result: %s" % output.result)
+            # if not output.result:
+            #     print("Error: %s" % output.info)
+```
+
