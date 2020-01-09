@@ -4,14 +4,15 @@ from dnacentersdk import api
 import urllib3
 urllib3.disable_warnings()
  
-dnac = api.DNACenterAPI(base_url='https://10.10.20.85:443', version='1.3.0')
+dnac = api.DNACenterAPI(
+    base_url='https://sandboxdnac2.cisco.com:443', version='1.2.10')
 dnac_device_list = dnac.devices.get_device_list(family="Switches and Hubs").get("response")
 
 for device in dnac_device_list:
     hostname = device.get("hostname")
     mgmt_ip = device.get("managementIpAddress")
     print(hostname + " " + mgmt_ip)
-    if "Host" in hostname:
+    if "ost" in hostname.lower():
         # skip if DNAC host is mislabled as a switch but actually is a Host
         continue
     with ncs.maapi.Maapi() as m:
@@ -27,9 +28,11 @@ for device in dnac_device_list:
                 device = device_list.create(hostname)
                 device.address = mgmt_ip
                 device.port = 22
-                device.authgroup = "dnac"
+                device.authgroup = "default"
                 dev_type = device.device_type.cli
-                dev_type.ned_id = 'cisco-ios-cli-6.39'
+                # this will need to be updated based on which ned is used
+                #  ls nso-run/packages/
+                dev_type.ned_id = 'cisco-ios-cli-6.42'
                 device.state.admin_state = 'unlocked'
 
                 print('Committing the device configuration...')
@@ -49,8 +52,8 @@ for device in dnac_device_list:
             output = device.ssh.fetch_host_keys()
             print("Result: %s" % output.result)
 
-            print("Syncing configuration...")
-            output = device.sync_from()
-            print("Result: %s" % output.result)
-            if not output.result:
-                print("Error: %s" % output.info)
+            # print("Syncing configuration...")
+            # output = device.sync_from()
+            # print("Result: %s" % output.result)
+            # if not output.result:
+            #     print("Error: %s" % output.info)

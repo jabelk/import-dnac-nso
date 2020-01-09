@@ -7,13 +7,17 @@ In order for NSO to fully import devices, it needs login credentials, which is o
  
 Here is what the script looks like after it is run:
 
-![Sample Output](sample-output.png)
+![Sample Output](dnac-script-import.png)
 
 
-### Device Topology for Reservable Sandbox
+### Device Topology for Always On Sandbox
 
  
-![Topology](DNAC-Sandbox-SJC-Sandbox-Public-Info.png)
+![Topology](dnac-sandbox-topo.png)
+
+### Device List for Always On Sandbox
+
+![Device list](dnac-sandbox-device-list.png)
 
 
 ## Use Case Description
@@ -27,122 +31,93 @@ This project has two main goals:
 Since Cisco NSO and Cisco DNA Center are both orchestration platforms with different purposes (but both focused on programmability), it can be helpful to see how one interacts with the other.
 
 ## Installation
+On your local laptop which follows the [nso-vagrant](https://github.com/NSO-developer/nso-vagrant) installation, or already has Cisco NSO installed. 
 
-Reserve the [Cisco DNA Center Lab 3](https://developer.cisco.com/site/sandbox/) for Cisco DNA Center 1.2.10. Start your reservation.
+```bash
 
-Log in to the devbox in the topology and issue the following commands to install NSO and set up the Cisco DNA Center SDK:
+git clone https://github.com/NSO-developer/nso-vagrant
+cd nso-vagrant
+
+ *** Download installer and NEDs and put in nso-vagrant/files from https://developer.cisco.com/docs/nso/#!getting-nso   ***
+
+nso-vagrant$ vagrant up
+
+  ***truncated for brevity***
+
+nso-vagrant$ vagrant ssh
+
+  ***truncated for brevity***
+
+vagrant@vagrant:~$ git clone https://github.com/jabelk/import-dnac-nso.git
+Cloning into 'import-dnac-nso'...
+remote: Enumerating objects: 35, done.
+remote: Counting objects: 100% (35/35), done.
+remote: Compressing objects: 100% (32/32), done.
+remote: Total 35 (delta 11), reused 14 (delta 2), pack-reused 0
+Unpacking objects: 100% (35/35), done.
+
+vagrant@vagrant:~$ cd import-dnac-nso/
+vagrant@vagrant:import-dnac-nso (master)$ pip install -r requirements.txt
+Collecting dnacentersdk
+
+  ***truncated for brevity***
+
+Successfully built future fastjsonschema
+Installing collected packages: future, fastjsonschema, certifi, urllib3, chardet, idna, requests, requests-toolbelt, dnacentersdk
+Successfully installed certifi-2019.11.28 chardet-3.0.4 dnacentersdk-1.3.0.post6 fastjsonschema-2.14.2 future-0.18.2 idna-2.8 requests-2.22.0 requests-toolbelt-0.9.1 urllib3-1.25.7
+```
+
+Now you have NSO and the basics set up, and the Python package dependencies installed. You need to add some additional steps to prep for the script to run. 
+
+Set up a dummy authgroup in NSO:
+
+```
+vagrant@vagrant:~$ ncs_cli -C -u admin
+admin@ncs# conf
+Entering configuration mode terminal
+admin@ncs(config)# devices authgroups group dnac default-map remote-name admin remote-password ciscopsdt
+admin@ncs(config-group-dnac)# commit
+Commit complete.
+admin@ncs(config-group-dnac)# end
+admin@ncs# exit
+
+
+```
+
+
 #### Set Up Cisco DNA Center SDK
+
+Issue the following commands so the SDK can use them to login to DNA-C:
+
 ```bash
-echo 'export DNA_CENTER_USERNAME=admin' >> ~/.bashrc
-echo 'export DNA_CENTER_PASSWORD=Cisco1234!' >> ~/.bashrc
-echo 'export DNA_CENTER_BASE_URL=10.10.20.85' >> ~/.bashrc
+echo 'export DNA_CENTER_USERNAME=devnetuser' >> ~/.bashrc
+echo 'export DNA_CENTER_PASSWORD=Cisco123!' >> ~/.bashrc
+echo 'export DNA_CENTER_BASE_URL=https://sandboxdnac2.cisco.com/' >> ~/.bashrc
 echo 'export DNA_CENTER_VERIFY=False' >> ~/.bashrc
-git clone https://github.com/cisco-en-programmability/dnacentersdk.git
-cd dnacentersdk/
-python3.6 setup.py install
-cd $HOME
-git clone https://github.com/jabelk/import-dnac-nso.git
-```
-
-#### Set Up NSO
-
-Download the [Cisco NSO binary for Linux](https://developer.cisco.com/docs/nso/). Download the Cisco IOS NED and put in the user home directory, `ncs-5.2.1-cisco-ios-6.39.tar.gz` for example. 
-**Download NSO from website to user home directory /root/**
-```bash
-sudo yum install ant
-sh nso-5.2.1.linux.x86_64.signed.bin
-sh nso-5.2.1.linux.x86_64.installer.bin  nso-install
-echo 'source /root/nso-install/ncsrc' >> ~/.bashrc
 source .bashrc
-ncs-setup --dest nso-run
-tar xf ncs-5.2.1-cisco-ios-6.39.tar.gz
-mv cisco-ios-cli-6.39 nso-run/packages
-cd ~/nso-run
-ncs
-ncs_cli -C -u admin
-packages reload force
-devices authgroups group dnac default-map remote-name admin remote-password ciscopsdt
-commit
 ```
 
-Update NSO Python VM to default to Python3:
-```bash
-rm $NCS_DIR/bin/ncs-start-python-vm
-vim $NCS_DIR/bin/ncs-start-python-vm
-```
-You could also use nano or some other text editor. 
-
-The file `$NCS_DIR/bin/ncs-start-python-vm` should have the following:
-```bash
-#!/bin/sh
-
-pypath="${NCS_DIR}/src/ncs/pyapi"
-dnacenterpath="/usr/local/lib/python3.6/site-packages"
-# Make sure everyone finds the NCS Python libraries at startup
-if [ "x$PYTHONPATH" != "x" ]; then
-    PYTHONPATH=${dnacenterpath}:${pypath}:$PYTHONPATH
-else
-    PYTHONPATH=${dnacenterpath}:${pypath}
-fi
-export PYTHONPATH
-
-main="${pypath}/ncs_pyvm/startup.py"
-
-echo "Starting python -u $main $*"
-exec python3 -u "$main" "$@"
-```
-
-## Configuration
-
-The following `base_url` can be changed to point to a different Cisco DNA Center
-```python
-dnac = api.DNACenterAPI(base_url='https://10.10.20.85:443', version='1.3.0')
-```
-
-Be sure to update the ENV variables to the corresponding information for your Cisco DNA Center:
-```bash
-echo 'export DNA_CENTER_USERNAME=admin' >> ~/.bashrc
-echo 'export DNA_CENTER_PASSWORD=Cisco1234!' >> ~/.bashrc
-echo 'export DNA_CENTER_BASE_URL=10.10.20.85' >> ~/.bashrc
-echo 'export DNA_CENTER_VERIFY=False' >> ~/.bashrc
-source ~/.bashrc
-```
 
 
 ## Usage
 
-The script must be run on a server which is currently running Cisco NSO. The instructions in this guide show how to do it on the devbox in the topology, but other NSO instances could be used. 
+The script must be run on a server which is currently running Cisco NSO in order to access the Cisco NSO Python API. The `nso-vagrant` setup fulfills this purpose. If you use the reservable DNA-Center sandbox, you will also be able to import the device configuration. Since the always on sandbox does not provide device access directly, you are only gathering data from the API. 
 
-After installation is finished, including adding the `dnac` authgroup, run the Python script using `Python3` after changing into the git cloned directory with the script `cd ~/import-dnac-nso`:
+After installation is finished, including adding the `dnac` authgroup, run the Python script using `python3` after changing into the git cloned directory with the script `cd ~/import-dnac-nso`:
 ```
-[root@devbox import-dnac-nso]# python3 import-dnac-nso.py
-Host1.abc.inc 10.10.20.83
-Host2 10.10.20.84
-leaf1.abc.inc 10.10.20.81
-Setting device leaf1.abc.inc configuration...
+vagrant@vagrant:import-dnac-nso (master)$ python3 import-dnac-nso.py
+leaf1.labb.local 10.10.20.81
+Setting device leaf1.labb.local configuration...
 Committing the device configuration...
 Committed
-Fetching SSH keys...
-Result: updated
-Syncing configuration...
-Result: True
-leaf2.abc.inc 10.10.20.82
-Setting device leaf2.abc.inc configuration...
+leaf2.labb.local 10.10.20.82
+Setting device leaf2.labb.local configuration...
 Committing the device configuration...
 Committed
-Fetching SSH keys...
-Result: updated
-Syncing configuration...
-Result: True
-spine1.abc.inc 10.10.20.80
-Setting device spine1.abc.inc configuration...
+spine1.abc.in.labb.local 10.10.20.80
+Setting device spine1.abc.in.labb.local configuration...
 Committing the device configuration...
 Committed
-Fetching SSH keys...
-Result: updated
-Syncing configuration...
-Result: True
-[root@devbox import-dnac-nso]#
 ```
 
-Now the Cisco NSO inventory includes all the network devices from Cisco DNA Center and has the parsed configuration. 
+Now the Cisco NSO inventory includes all the network devices from Cisco DNA Center.
